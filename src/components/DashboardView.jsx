@@ -47,6 +47,7 @@ export default function DashboardView({ onNavigate }) {
   };
 
   // Compile active squad members
+  // Real squad members: You + confirmed teammates from accepted invites
   const squadMembers = [
     {
       displayName: profile.displayName + ' (You)',
@@ -57,24 +58,12 @@ export default function DashboardView({ onNavigate }) {
     },
     ...acceptedTeammates.map(t => ({
       displayName: t.toName || t.fromName || 'Teammate',
-      preferredRole: t.toRole || t.fromRole || 'ML Engineer',
-      skills: ['Python', 'Docker'],
+      preferredRole: t.toRole || t.fromRole || 'Developer',
+      skills: ['React', 'Python', 'FastAPI'],
       isLeader: false,
       isOnline: true
     }))
   ];
-
-  // Default teammates if solo
-  if (squadMembers.length < 4) {
-    const fallbackMates = [
-      { displayName: 'Priya Sharma', preferredRole: 'ML', skills: ['PyTorch', 'FastAPI'], isOnline: true },
-      { displayName: 'Marcus Vance', preferredRole: 'Backend', skills: ['Go', 'PostgreSQL'], isOnline: true },
-      { displayName: 'Elena Rostova', preferredRole: 'Design', skills: ['Figma', 'UI/UX'], isOnline: true }
-    ];
-    fallbackMates.forEach(m => {
-      if (squadMembers.length < 4) squadMembers.push(m);
-    });
-  }
 
   // Load project & tasks on mount
   useEffect(() => {

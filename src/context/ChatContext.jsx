@@ -15,13 +15,8 @@ export function ChatProvider({ children }) {
   const [typingUsers, setTypingUsers] = useState([]);
   const [pulseTick, setPulseTick] = useState(0); // 3D shockwave pulse trigger
 
-  // Online / Offline presence list
-  const [onlineUsers, setOnlineUsers] = useState([
-    { name: 'Priya Sharma', role: 'ML Engineer', isOnline: true },
-    { name: 'Marcus Vance', role: 'Backend Architect', isOnline: true },
-    { name: 'Elena Rostova', role: 'UI/UX Designer', isOnline: true },
-    { name: 'Aisha Tariq', role: 'DevOps & Cloud', isOnline: false }
-  ]);
+  // Online / Offline presence list for real users
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   // Load chat history on mount
   useEffect(() => {

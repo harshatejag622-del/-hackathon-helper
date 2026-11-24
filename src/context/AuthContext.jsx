@@ -31,68 +31,22 @@ export function AuthProvider({ children }) {
 
   // Sync auth state listener with per-tab session isolation
   useEffect(() => {
-    // 1. Check tab-specific sessionStorage first (allows Tab 1 = Teja, Tab 2 = Friend)
+    // Check tab-specific sessionStorage first (allows Tab 1 = Teja, Tab 2 = Friend)
     const sessionUser = sessionStorage.getItem('hh_session_user');
     const sessionProfile = sessionStorage.getItem('hh_session_profile');
     if (sessionUser) {
       try {
         setCurrentUser(JSON.parse(sessionUser));
         if (sessionProfile) setUserProfile(JSON.parse(sessionProfile));
-        setLoading(false);
-        return;
       } catch (e) {
         console.error("Failed to parse tab session:", e);
       }
+    } else {
+      // Start clean in this tab so each friend can sign in with their own email!
+      setCurrentUser(null);
+      setUserProfile(null);
     }
-
-    // If this tab doesn't have an active session yet, start clean so the user can log in with another email
-    if (!isConfigured) {
-      // If there was a previous single-tab session and no sessionUser exists, load once
-      const savedMockUser = localStorage.getItem('hh_mock_user');
-      const savedMockProfile = localStorage.getItem('hh_mock_profile');
-      const sessionStarted = sessionStorage.getItem('hh_session_started');
-      
-      if (!sessionStarted && savedMockUser) {
-        try {
-          const u = JSON.parse(savedMockUser);
-          setCurrentUser(u);
-          sessionStorage.setItem('hh_session_user', JSON.stringify(u));
-          sessionStorage.setItem('hh_session_started', 'true');
-          if (savedMockProfile) {
-            const p = JSON.parse(savedMockProfile);
-            setUserProfile(p);
-            sessionStorage.setItem('hh_session_profile', JSON.stringify(p));
-          }
-        } catch (e) {}
-      } else {
-        sessionStorage.setItem('hh_session_started', 'true');
-      }
-      setLoading(false);
-      return;
-    }
-
-    if (!auth) {
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        sessionStorage.setItem('hh_session_user', JSON.stringify({
-          uid: user.uid,
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL
-        }));
-        await loadUserProfile(user.uid);
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    setLoading(false);
   }, []);
 
   // Fetch Firestore profile for a user
@@ -183,13 +137,12 @@ export function AuthProvider({ children }) {
     };
     setCurrentUser(registeredUser);
     sessionStorage.setItem('hh_session_user', JSON.stringify(registeredUser));
-    localStorage.setItem('hh_mock_user', JSON.stringify(registeredUser));
 
     // Register into shared community users
     try {
       const allUsers = JSON.parse(localStorage.getItem('hh_all_community_users') || '[]');
       const filtered = allUsers.filter(u => u.uid !== registeredUser.uid);
-      filtered.push({
+      const newUserProfile = {
         uid: registeredUser.uid,
         displayName: registeredUser.displayName,
         email: registeredUser.email,
@@ -198,8 +151,15 @@ export function AuthProvider({ children }) {
         interests: ['Artificial Intelligence', 'Web3 & Crypto'],
         college: 'Innovation University',
         photoURL: registeredUser.photoURL
-      });
+      };
+      filtered.push(newUserProfile);
       localStorage.setItem('hh_all_community_users', JSON.stringify(filtered));
+
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('hh_team_sync_channel');
+        bc.postMessage({ type: 'new_registered_user', user: newUserProfile });
+        bc.close();
+      }
     } catch (e) {}
 
     return registeredUser;

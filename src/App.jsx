@@ -98,12 +98,9 @@ function MainLayout() {
         onOpenAuthModal={() => setAuthModalOpen(true)} 
       />
 
-      {/* Interactive Team Lead Control & Alert Broadcast Bar (Explicit 110px top clearance) */}
-      <div 
-        className="relative z-20 px-4 sm:px-8 max-w-7xl mx-auto pb-4"
-        style={{ paddingTop: '115px' }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-indigo-950/90 border border-indigo-500/50 backdrop-blur-xl shadow-2xl">
+      {/* Interactive Team Lead Control & Alert Broadcast Bar (Guaranteed clearance below fixed Navbar) */}
+      <div className="relative z-20 px-4 sm:px-8 max-w-7xl mx-auto pt-28 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-indigo-950/95 border border-indigo-500/50 backdrop-blur-2xl shadow-2xl">
           <div className="flex items-center gap-3">
             <span className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md ${
               isTeamLead 

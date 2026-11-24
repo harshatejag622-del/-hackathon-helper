@@ -34,8 +34,8 @@ export default function TeamMatchingView({ onNavigate }) {
   // Active user profile fallback if guest
   const activeProfile = userProfile || {
     uid: currentUser?.uid || 'guest-hacker',
-    displayName: currentUser?.displayName || 'Alex Chen',
-    college: 'MIT / Innovation Labs',
+    displayName: currentUser?.displayName || currentUser?.email?.split('@')[0] || 'You (Lead)',
+    college: 'Your College / University',
     year: '3rd Year',
     preferredRole: 'FullStack',
     skills: ['Python', 'React', 'Machine Learning', 'Tailwind CSS', 'FastAPI'],

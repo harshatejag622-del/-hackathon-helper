@@ -23,10 +23,10 @@ const INITIAL_TEAMS_DATA = [
   {
     id: 'team-1',
     name: 'Team Nova (AI/ML)',
-    leader: 'Alex Chen',
+    leader: 'Hacker Team Lead',
     track: 'HealthTech & Bio',
     project: 'AIPulse Sentinel',
-    members: ['Alex Chen (FullStack)', 'Priya Sharma (ML)', 'Marcus Vance (Backend)', 'Elena Rostova (Design)'],
+    members: ['Lead Innovator (FullStack)', 'Aarav Patel (ML)', 'Vikram Singh (Backend)', 'Ananya Rao (Design)'],
     cosineScore: 98,
     status: 'Verified',
     submittedAt: '2 hours ago'

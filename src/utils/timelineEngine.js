@@ -85,12 +85,9 @@ export const DOMAIN_COLORS = {
  * Generate 48-hour timeline tasks assigned to team members
  */
 export function generateSquadTimeline(squadMembers = [], projectName = 'Hackathon Project') {
-  // Ensure we have balanced member profiles for all domains
+  // Real active members or self as lead
   const defaultSquad = [
-    { displayName: 'You (Leader)', preferredRole: 'FullStack', skills: ['React', 'Python', 'FastAPI'] },
-    { displayName: 'Priya Sharma', preferredRole: 'ML', skills: ['Python', 'PyTorch', 'NLP'] },
-    { displayName: 'Marcus Vance', preferredRole: 'Backend', skills: ['Go', 'Docker', 'PostgreSQL'] },
-    { displayName: 'Elena Rostova', preferredRole: 'UI/UX', skills: ['Figma', 'UI/UX Design', 'Tailwind'] }
+    { displayName: 'You (Leader)', preferredRole: 'FullStack', skills: ['React', 'Python', 'FastAPI'] }
   ];
 
   const activeMembers = squadMembers.length > 0 ? squadMembers : defaultSquad;

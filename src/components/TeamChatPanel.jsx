@@ -163,14 +163,9 @@ export default function TeamChatPanel() {
                 </div>
               ))
             ) : (
-              onlineUsers.slice(0, 3).map((user, idx) => (
-                <div key={idx} className="flex items-center gap-1.5 shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-                  <span className="text-slate-400">
-                    {user.name.split(' ')[0]}
-                  </span>
-                </div>
-              ))
+              <span className="text-slate-500 text-[10px] italic">
+                Solo (Send invites in "Find Team" to grow your squad!)
+              </span>
             )}
           </div>
 
