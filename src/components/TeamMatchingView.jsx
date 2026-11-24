@@ -192,8 +192,14 @@ export default function TeamMatchingView({ onNavigate }) {
               <p className="text-xs text-slate-400 mt-3">Computing multi-vector cosine similarities...</p>
             </div>
           ) : topMatches.length === 0 ? (
-            <div className="glass-panel p-8 rounded-3xl text-center">
-              <p className="text-slate-400 text-sm">No other participants found. Be the first to invite friends!</p>
+            <div className="glass-panel p-8 sm:p-10 rounded-3xl text-center border border-indigo-500/20 bg-indigo-950/20">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-3">
+                <Users className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-bold text-white">No Other Teammates Registered Yet</h4>
+              <p className="text-xs text-slate-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                You are registered and ready! When your friends open the app in another tab or phone and sign up with their email and skills, they will immediately appear here with live Cosine Match scores!
+              </p>
             </div>
           ) : (
             topMatches.map((candidate, idx) => {

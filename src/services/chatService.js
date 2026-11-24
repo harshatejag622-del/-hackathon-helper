@@ -11,34 +11,16 @@ import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/fir
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_SERVER_URL || 'http://localhost:3001';
 
-// Initial welcoming squad messages
+// Initial system welcome message for group chat
 export const INITIAL_CHAT_MESSAGES = [
   {
-    id: 'msg-seed-1',
-    senderId: 'candidate_priya_sharma',
-    senderName: 'Priya Sharma',
-    senderRole: 'ML Engineer',
-    senderPhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-    text: 'Hey team! 🚀 I just set up our PyTorch data preprocessing pipeline for the health telemetry model.',
-    timestamp: new Date(Date.now() - 3600 * 1000 * 3).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  },
-  {
-    id: 'msg-seed-2',
-    senderId: 'candidate_marcus_vance',
-    senderName: 'Marcus Vance',
-    senderRole: 'Backend Architect',
-    senderPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-    text: 'Nice! The FastAPI endpoints and Firestore authentication guards are live. Ready to connect whenever frontend is ready.',
-    timestamp: new Date(Date.now() - 3600 * 1000 * 2).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  },
-  {
-    id: 'msg-seed-3',
-    senderId: 'candidate_elena_rostova',
-    senderName: 'Elena Rostova',
-    senderRole: 'UI/UX Designer',
-    senderPhoto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
-    text: 'Figma wireframes are locked in! Check the 3D dashboard design tokens in the team repo. Let us crush this 48h sprint! 🔥',
-    timestamp: new Date(Date.now() - 3600 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    id: 'msg-system-welcome',
+    senderId: 'system',
+    senderName: '🚀 Hackathon System',
+    senderRole: 'Group Channel',
+    senderPhoto: null,
+    text: 'Welcome to your Squad Group War Room! All messages sent here are synced in real time across tabs and devices.',
+    timestamp: 'Just now'
   }
 ];
 

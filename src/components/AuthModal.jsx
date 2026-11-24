@@ -10,8 +10,7 @@ import {
   ArrowRight, 
   CheckCircle2, 
   Crown, 
-  ShieldCheck,
-  Users
+  Code
 } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose, onSuccess }) {
@@ -20,8 +19,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     loginWithEmail, 
     signupWithEmail, 
     authError, 
-    setAuthError, 
-    quickSwitchMember,
+    setAuthError,
     toggleTeamLead
   } = useAuth();
 
@@ -29,10 +27,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [role, setRole] = useState('FullStack');
   const [isLead, setIsLead] = useState(false);
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState('');
-  const [showDemoLogins, setShowDemoLogins] = useState(false);
 
   if (!isOpen) return null;
 
@@ -42,7 +40,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     return emailRegex.test(val.trim());
   };
 
-  // Password rules: minimum 6 characters with at least 1 letter and 1 number
+  // Password rules: minimum 6 characters with letters and numbers
   const checkPasswordStrength = (val) => {
     if (!val) return { score: 0, label: 'Empty', color: 'bg-slate-700' };
     if (val.length < 6) return { score: 1, label: 'Too Short (Min 6 chars)', color: 'bg-rose-500' };
@@ -81,7 +79,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
 
     // Strict Email Validation
     if (!isValidEmail(email)) {
-      setValidationError('Please enter a valid email address (e.g., student@university.edu or name@gmail.com)');
+      setValidationError('Please enter a valid email address (e.g., yourname@gmail.com or student@college.edu)');
       return;
     }
 
@@ -98,7 +96,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     setLoading(true);
     try {
       if (isSignUp) {
-        await signupWithEmail(email, password, name);
+        await signupWithEmail(email, password, name, role);
         if (isLead) toggleTeamLead(true);
       } else {
         await loginWithEmail(email, password);
@@ -112,50 +110,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  // Demo accounts for instant multi-tab testing
-  const demoAccounts = [
-    {
-      uid: 'lead_alex_chen',
-      displayName: 'Alex Chen',
-      email: 'alex.lead@hackathon.io',
-      preferredRole: 'FullStack',
-      isLead: true,
-      college: 'Stanford University',
-      photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-      badge: '👑 Team Lead (Tab 1)'
-    },
-    {
-      uid: 'candidate_priya_sharma',
-      displayName: 'Priya Sharma',
-      email: 'priya.ml@berkeley.edu',
-      preferredRole: 'ML Engineer',
-      isLead: false,
-      college: 'UC Berkeley',
-      photoURL: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-      badge: '💻 Teammate 1 (Tab 2)'
-    },
-    {
-      uid: 'candidate_marcus_vance',
-      displayName: 'Marcus Vance',
-      email: 'marcus.sys@mit.edu',
-      preferredRole: 'Backend Architect',
-      isLead: false,
-      college: 'MIT',
-      photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-      badge: '💻 Teammate 2 (Tab 3)'
-    }
-  ];
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto">
       <div 
-        className="glass-panel-glow rounded-3xl p-6 sm:p-8 max-w-lg w-full relative shadow-2xl border border-indigo-500/30 overflow-hidden my-8"
+        className="glass-panel-glow rounded-3xl p-6 sm:p-8 max-w-md w-full relative shadow-2xl border border-indigo-500/30 overflow-hidden my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -166,12 +130,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl font-black text-white">
-            {isSignUp ? 'Create Innovator Account' : 'Sign In to Hackathon Squad'}
+            {isSignUp ? 'Create Real Account' : 'Sign In with Email'}
           </h2>
           <p className="text-xs text-slate-400 mt-1">
             {isSignUp
-              ? 'Join as Team Lead or Developer to collaborate in real time'
-              : 'Sign in to access your squad, 48-hour timeline, and war room'}
+              ? 'Register with your real email & skills to match with hackathon squads'
+              : 'Sign in to access your squad, 48-hour timeline, and group war room'}
           </p>
         </div>
 
@@ -183,44 +147,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           </div>
         )}
 
-        {/* Collapsible Fast Demo Accounts (Optional) */}
-        <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => setShowDemoLogins(!showDemoLogins)}
-            className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold transition-colors"
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>{showDemoLogins ? '▲ Hide Quick Demo Shortcuts' : '▼ 1-Click Test Shortcuts (Optional)'}</span>
-          </button>
-
-          {showDemoLogins && (
-            <div className="mt-2 p-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 grid grid-cols-1 sm:grid-cols-3 gap-1.5 animate-fade-in">
-              {demoAccounts.map(acc => (
-                <button
-                  key={acc.uid}
-                  type="button"
-                  onClick={() => {
-                    quickSwitchMember(acc);
-                    onSuccess?.();
-                    onClose();
-                  }}
-                  className="text-left p-2 rounded-xl bg-slate-900/80 hover:bg-indigo-600/30 border border-white/5 hover:border-indigo-500/50 transition-all text-xs flex flex-col justify-between"
-                >
-                  <div className="font-bold text-white truncate">{acc.displayName}</div>
-                  <div className="text-[10px] text-indigo-400 font-semibold">{acc.badge}</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* Google One-Click Button */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm flex items-center justify-center gap-3 transition-all shadow-md active:scale-95 disabled:opacity-50"
+          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm flex items-center justify-center gap-3 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -244,29 +176,50 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         </button>
 
         {/* Separator */}
-        <div className="flex items-center my-3 gap-3">
+        <div className="flex items-center my-4 gap-3">
           <div className="flex-1 h-px bg-white/10"></div>
           <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Or with Valid Email</span>
           <div className="flex-1 h-px bg-white/10"></div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Real Form */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           {isSignUp && (
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Harsha Teja"
-                  className="w-full pl-10 pr-4 py-2 bg-slate-900/80 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none text-sm text-white"
-                />
+            <>
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Your Real Name</label>
+                <div className="relative">
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Harsha Teja"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none text-sm text-white"
+                  />
+                </div>
               </div>
-            </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1">Primary Role / Domain</label>
+                <div className="relative">
+                  <Code className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none text-sm text-white"
+                  >
+                    <option value="FullStack">Full Stack Developer</option>
+                    <option value="Frontend">Frontend Developer (React/UI)</option>
+                    <option value="Backend">Backend Architect (Node/Python/Go)</option>
+                    <option value="ML">Machine Learning / AI Engineer</option>
+                    <option value="Design">UI/UX & Product Designer</option>
+                    <option value="DevOps">Cloud & DevOps Specialist</option>
+                  </select>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Email with real-time validation indicator */}
@@ -294,8 +247,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@university.edu"
-                className={`w-full pl-10 pr-4 py-2 bg-slate-900/80 rounded-xl border ${
+                placeholder="your.email@gmail.com"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-900/80 rounded-xl border ${
                   email ? (isValidEmail(email) ? 'border-emerald-500/50' : 'border-rose-500/50') : 'border-white/10'
                 } focus:outline-none text-sm text-white`}
               />
@@ -321,10 +274,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min 6 characters (Letters & Numbers)"
-                className="w-full pl-10 pr-4 py-2 bg-slate-900/80 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none text-sm text-white"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none text-sm text-white"
               />
             </div>
-            {/* Strength Meter Bar */}
             {password && (
               <div className="w-full bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden flex gap-0.5">
                 <div className={`h-full flex-1 ${strength.score >= 1 ? strength.color : 'bg-transparent'}`}></div>
@@ -334,9 +286,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
             )}
           </div>
 
-          {/* Team Lead Checkbox for Sign Up */}
+          {/* Team Lead Checkbox on Sign Up */}
           {isSignUp && (
-            <label className="flex items-center gap-2 p-2.5 rounded-xl bg-indigo-900/20 border border-indigo-500/20 cursor-pointer hover:bg-indigo-900/30 transition-colors">
+            <label className="flex items-center gap-2.5 p-3 rounded-xl bg-indigo-900/20 border border-indigo-500/20 cursor-pointer hover:bg-indigo-900/30 transition-colors">
               <input
                 type="checkbox"
                 checked={isLead}
@@ -345,7 +297,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               />
               <div className="flex items-center gap-1.5 text-xs text-white">
                 <Crown className="w-4 h-4 text-amber-400" />
-                <span className="font-bold">Designate me as Team Lead</span>
+                <span className="font-bold">Register as Squad Team Lead</span>
               </div>
             </label>
           )}
@@ -353,13 +305,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+            className="w-full mt-3 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <span className="loading loading-spinner loading-sm"></span>
             ) : (
               <>
-                <span>{isSignUp ? 'Create Validated Account' : 'Sign In to Squad'}</span>
+                <span>{isSignUp ? 'Create Account & Join Hackathon' : 'Sign In to Squad'}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -367,7 +319,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
         </form>
 
         {/* Toggle sign in / sign up */}
-        <div className="mt-3 text-center">
+        <div className="mt-4 text-center">
           <button
             type="button"
             onClick={() => {
@@ -375,9 +327,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }) {
               setValidationError('');
               setAuthError(null);
             }}
-            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors cursor-pointer"
           >
-            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up with validation"}
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up with your Email"}
           </button>
         </div>
       </div>
