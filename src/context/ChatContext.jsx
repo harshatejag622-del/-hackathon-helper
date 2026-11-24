@@ -33,7 +33,10 @@ export function ChatProvider({ children }) {
 
     // Subscribe to incoming messages
     const unsubMessage = chatManager.onMessage((incoming) => {
-      setMessages(prev => [...prev, incoming]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === incoming.id)) return prev;
+        return [...prev, incoming];
+      });
       setPulseTick(p => p + 1); // Trigger 3D pulse
       if (!isChatOpen) {
         setUnreadCount(c => c + 1);
@@ -55,11 +58,22 @@ export function ChatProvider({ children }) {
     };
   }, [isChatOpen]);
 
-  // Reset unread count when chat is opened
+  // Reload complete past message history
+  const reloadHistory = async () => {
+    try {
+      const history = await chatManager.fetchHistory();
+      setMessages(history);
+    } catch (e) {}
+  };
+
+  // Reset unread count & refresh all past messages when chat is opened
   const toggleChat = () => {
     setIsChatOpen(prev => {
       const next = !prev;
-      if (next) setUnreadCount(0);
+      if (next) {
+        setUnreadCount(0);
+        reloadHistory();
+      }
       return next;
     });
   };
@@ -67,6 +81,7 @@ export function ChatProvider({ children }) {
   const openChat = () => {
     setIsChatOpen(true);
     setUnreadCount(0);
+    reloadHistory();
   };
 
   const closeChat = () => {

@@ -42,19 +42,35 @@ export default function TeamMatchingView({ onNavigate }) {
     interests: ['Artificial Intelligence', 'Sustainability & CleanTech', 'Web3 & Crypto']
   };
 
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const pool = await fetchAllParticipants(currentUser?.uid);
-        setParticipants(pool);
-      } catch (err) {
-        console.error("Failed to load participants:", err);
-      } finally {
-        setLoading(false);
-      }
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const pool = await fetchAllParticipants(currentUser?.uid);
+      setParticipants(pool);
+    } catch (err) {
+      console.error("Failed to load participants:", err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadData();
+
+    // Listen to real-time cross-tab community updates (when a friend registers or updates profile in another tab)
+    let bc;
+    try {
+      bc = new BroadcastChannel('hh_team_sync_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'profile_updated' || event.data?.type === 'new_registered_user') {
+          loadData();
+        }
+      };
+    } catch (e) {}
+
+    return () => {
+      if (bc) bc.close();
+    };
   }, [currentUser]);
 
   // Compute Top 5 Matches via weighted Cosine Similarity

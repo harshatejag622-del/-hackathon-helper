@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
 
   // Sync auth state listener with per-tab session isolation
   useEffect(() => {
-    // 1. Check tab-specific sessionStorage first (allows Tab 1 = Team Lead, Tab 2 = Member)
+    // 1. Check tab-specific sessionStorage first (allows Tab 1 = Teja, Tab 2 = Friend)
     const sessionUser = sessionStorage.getItem('hh_session_user');
     const sessionProfile = sessionStorage.getItem('hh_session_profile');
     if (sessionUser) {
@@ -45,22 +45,27 @@ export function AuthProvider({ children }) {
       }
     }
 
-    // 2. Check local fallback if active
-    const savedMockUser = localStorage.getItem('hh_mock_user');
-    const savedMockProfile = localStorage.getItem('hh_mock_profile');
-
-    if (!isConfigured && savedMockUser) {
-      try {
-        const u = JSON.parse(savedMockUser);
-        setCurrentUser(u);
-        sessionStorage.setItem('hh_session_user', JSON.stringify(u));
-        if (savedMockProfile) {
-          const p = JSON.parse(savedMockProfile);
-          setUserProfile(p);
-          sessionStorage.setItem('hh_session_profile', JSON.stringify(p));
-        }
-      } catch (e) {
-        console.error("Failed to parse mock session:", e);
+    // If this tab doesn't have an active session yet, start clean so the user can log in with another email
+    if (!isConfigured) {
+      // If there was a previous single-tab session and no sessionUser exists, load once
+      const savedMockUser = localStorage.getItem('hh_mock_user');
+      const savedMockProfile = localStorage.getItem('hh_mock_profile');
+      const sessionStarted = sessionStorage.getItem('hh_session_started');
+      
+      if (!sessionStarted && savedMockUser) {
+        try {
+          const u = JSON.parse(savedMockUser);
+          setCurrentUser(u);
+          sessionStorage.setItem('hh_session_user', JSON.stringify(u));
+          sessionStorage.setItem('hh_session_started', 'true');
+          if (savedMockProfile) {
+            const p = JSON.parse(savedMockProfile);
+            setUserProfile(p);
+            sessionStorage.setItem('hh_session_profile', JSON.stringify(p));
+          }
+        } catch (e) {}
+      } else {
+        sessionStorage.setItem('hh_session_started', 'true');
       }
       setLoading(false);
       return;
@@ -219,17 +224,35 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const demoUser = {
-      uid: 'email-user-' + email.replace(/[^a-zA-Z0-9]/g, '_'),
+    // Check if user previously registered in community users
+    const allUsers = JSON.parse(localStorage.getItem('hh_all_community_users') || '[]');
+    const existing = allUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    const activeUser = existing ? {
+      uid: existing.uid,
+      displayName: existing.displayName || email.split('@')[0],
+      email: existing.email || email,
+      photoURL: existing.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+      providerId: 'password'
+    } : {
+      uid: 'user-' + email.replace(/[^a-zA-Z0-9]/g, '_'),
       displayName: email.split('@')[0],
       email: email,
       photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
       providerId: 'password'
     };
-    setCurrentUser(demoUser);
-    localStorage.setItem('hh_mock_user', JSON.stringify(demoUser));
-    await loadUserProfile(demoUser.uid);
-    return demoUser;
+
+    setCurrentUser(activeUser);
+    sessionStorage.setItem('hh_session_user', JSON.stringify(activeUser));
+
+    // Restore all features (skills, role, college, bio) if already saved
+    if (existing) {
+      setUserProfile(existing);
+      sessionStorage.setItem('hh_session_profile', JSON.stringify(existing));
+    } else {
+      await loadUserProfile(activeUser.uid);
+    }
+    return activeUser;
   };
 
   // Save/Update Profile to Firestore
