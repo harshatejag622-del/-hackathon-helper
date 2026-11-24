@@ -91,10 +91,11 @@ export const DEFAULT_PARTICIPANTS = [
   }
 ];
 
-// Fetch all participants from Firestore (with realistic defaults)
+// Fetch all participants from Firestore and community registrations
 export async function fetchAllParticipants(currentUserId) {
   let participants = [];
 
+  // 1. Fetch from live Firestore if configured
   try {
     if (db && isConfigured) {
       const usersRef = collection(db, 'users');
@@ -110,15 +111,25 @@ export async function fetchAllParticipants(currentUserId) {
     console.warn("Could not fetch participants from live Firestore:", err.message);
   }
 
-  // If live Firestore returned few or no participants, merge default candidates
-  if (participants.length < 5) {
+  // 2. Fetch all real registered community users
+  try {
+    const communityUsers = JSON.parse(localStorage.getItem('hh_all_community_users') || '[]');
     const existingIds = new Set(participants.map(p => p.uid));
-    DEFAULT_PARTICIPANTS.forEach(candidate => {
-      if (!existingIds.has(candidate.uid) && candidate.uid !== currentUserId) {
-        participants.push(candidate);
+    communityUsers.forEach(u => {
+      if (u.uid !== currentUserId && !existingIds.has(u.uid)) {
+        participants.unshift(u); // Put real registered users first!
+        existingIds.add(u.uid);
       }
     });
-  }
+  } catch (e) {}
+
+  // 3. Fallback candidates to ensure candidate list is always rich
+  const existingIds = new Set(participants.map(p => p.uid));
+  DEFAULT_PARTICIPANTS.forEach(candidate => {
+    if (!existingIds.has(candidate.uid) && candidate.uid !== currentUserId) {
+      participants.push(candidate);
+    }
+  });
 
   return participants;
 }

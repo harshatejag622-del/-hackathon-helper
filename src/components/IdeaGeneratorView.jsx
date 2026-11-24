@@ -107,7 +107,7 @@ export default function IdeaGeneratorView({ onNavigate }) {
   };
 
   return (
-    <div className="relative z-10 pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto">
+    <div className="relative z-10 pt-4 sm:pt-6 pb-20 px-4 sm:px-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-8">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold border border-purple-500/30 mb-3 backdrop-blur-md">

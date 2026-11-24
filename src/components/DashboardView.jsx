@@ -130,7 +130,7 @@ export default function DashboardView({ onNavigate }) {
     : 0;
 
   return (
-    <div className="relative z-10 pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="relative z-10 pt-4 sm:pt-6 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
       {/* Top Bar: View Switcher (User vs Admin) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div>

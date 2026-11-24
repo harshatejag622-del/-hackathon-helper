@@ -9,6 +9,7 @@ import {
 } from '../utils/timelineEngine';
 import Timeline3DScene from './Timeline3DScene';
 import GanttChart from './GanttChart';
+import { broadcastTeamAlert } from './AlertNotificationModal';
 import { 
   Clock, 
   CheckCircle2, 
@@ -24,18 +25,38 @@ import {
   Flame,
   ArrowRight,
   TrendingUp,
-  Bookmark
+  Bookmark,
+  AlertTriangle,
+  Crown
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function TimelinePlannerView({ onNavigate }) {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, isTeamLead } = useAuth();
   const { acceptedTeammates } = useInvites();
 
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(MILESTONES[0]);
   const [currentHour, setCurrentHour] = useState(8); // Simulated current hour of hackathon
+
+  // Listen to cross-tab task updates
+  useEffect(() => {
+    let bc;
+    try {
+      bc = new BroadcastChannel('hh_team_tasks_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.tasks) {
+          setTasks(event.data.tasks);
+        }
+      };
+    } catch (e) {
+      console.warn("Task channel notice:", e);
+    }
+    return () => {
+      if (bc) bc.close();
+    };
+  }, []);
 
   // Compile active squad members
   const squadMembers = [
@@ -93,7 +114,14 @@ export default function TimelinePlannerView({ onNavigate }) {
       // Save to cache
       localStorage.setItem(`hh_timeline_tasks_${currentUser?.uid}`, JSON.stringify(updated));
 
-      // If all completed, fire confetti
+      // Broadcast across all other open tabs in real time
+      try {
+        const bc = new BroadcastChannel('hh_team_tasks_channel');
+        bc.postMessage({ tasks: updated });
+        bc.close();
+      } catch (e) {}
+
+      // If all completed, fire confetti & broadcast celebration
       const allDone = updated.every(t => t.status === 'completed');
       if (allDone) {
         confetti({
@@ -101,9 +129,35 @@ export default function TimelinePlannerView({ onNavigate }) {
           spread: 80,
           origin: { y: 0.5 }
         });
+        broadcastTeamAlert({
+          isPopup: true,
+          type: 'completed',
+          senderRole: '🏆 Sprint Milestone Achieved',
+          title: '🎉 All 48h Sprint Tasks Completed!',
+          message: 'The squad has fully executed all sprint milestone deliverables! Prepare your slide deck for the demo pitch!'
+        });
       }
 
       return updated;
+    });
+  };
+
+  // Team Lead sends urgent alert for incomplete milestone
+  const alertIncompleteMilestone = (milestone) => {
+    const leaderName = userProfile?.displayName || currentUser?.displayName || 'Alex Chen (Team Lead)';
+    const pendingTasks = tasks.filter(t => t.milestoneId === milestone.id && t.status !== 'completed');
+    
+    broadcastTeamAlert({
+      isPopup: true,
+      type: 'incomplete',
+      senderRole: '👑 Team Lead Urgent Notice',
+      title: `⚠️ Alert: ${milestone.title} is Incomplete!`,
+      message: `${leaderName} flagged this milestone! There are ${pendingTasks.length} pending task(s) that need immediate attention before the deadline expires.`,
+      milestone: {
+        title: milestone.title,
+        completed: false,
+        progress: Math.max(10, Math.round(((tasks.filter(t => t.milestoneId === milestone.id && t.status === 'completed').length) / (tasks.filter(t => t.milestoneId === milestone.id).length || 1)) * 100))
+      }
     });
   };
 
@@ -115,7 +169,7 @@ export default function TimelinePlannerView({ onNavigate }) {
     : 0;
 
   return (
-    <div className="relative z-10 pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
+    <div className="relative z-10 pt-4 sm:pt-6 pb-20 px-4 sm:px-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
@@ -206,7 +260,17 @@ export default function TimelinePlannerView({ onNavigate }) {
             <Zap className="w-5 h-5 text-indigo-400" />
             3D Milestone Highway & Critical Gates
           </h3>
-          <span className="text-xs text-slate-400">Click a floating marker to view phase deliverables</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 hidden sm:inline">Click a floating marker to view phase deliverables</span>
+            <button
+              onClick={() => alertIncompleteMilestone(selectedMilestone)}
+              className="btn btn-error btn-xs gap-1 text-white shadow-md active:scale-95"
+              title="Pop up warning in all teammate tabs if work is incomplete"
+            >
+              <AlertTriangle className="w-3 h-3" />
+              Alert Incomplete Milestone
+            </button>
+          </div>
         </div>
         <Timeline3DScene
           selectedMilestone={selectedMilestone}

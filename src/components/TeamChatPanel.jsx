@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
+import { useInvites } from '../context/InviteContext';
 import { 
   MessageSquare, 
   X, 
@@ -32,6 +33,7 @@ export default function TeamChatPanel() {
   } = useChat();
 
   const { currentUser } = useAuth();
+  const { acceptedTeammates } = useInvites();
 
   const [inputMsg, setInputMsg] = useState('');
   const [attachment, setAttachment] = useState(null);
@@ -126,11 +128,11 @@ export default function TeamChatPanel() {
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
                   <MessageSquare className="w-4 h-4 text-indigo-400" />
-                  Squad 48h War Room
+                  Squad Group War Room ({acceptedTeammates.length + 1} Members)
                 </h3>
               </div>
               <span className="text-[11px] text-slate-400">
-                Socket.io Live Sync • Firestore Persisted
+                Live Multi-Member Group Chat • Real-Time Sync
               </span>
             </div>
 
@@ -145,20 +147,31 @@ export default function TeamChatPanel() {
           {/* Online Teammates Status Strip */}
           <div className="px-4 py-2 bg-slate-950/70 border-b border-white/5 flex items-center gap-3 overflow-x-auto text-[11px]">
             <span className="text-slate-500 shrink-0 font-bold uppercase tracking-wider text-[10px]">
-              Presence:
+              Group Members:
             </span>
-            {onlineUsers.map((user, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 shrink-0">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    user.isOnline ? 'bg-emerald-400 shadow-sm shadow-emerald-400/80' : 'bg-slate-600'
-                  }`}
-                ></span>
-                <span className={user.isOnline ? 'text-slate-200' : 'text-slate-500'}>
-                  {user.name.split(' ')[0]}
-                </span>
-              </div>
-            ))}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80"></span>
+              <span className="text-emerald-300 font-bold">You</span>
+            </div>
+            {acceptedTeammates.length > 0 ? (
+              acceptedTeammates.map((teammate, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/80"></span>
+                  <span className="text-slate-200 font-medium">
+                    {(teammate.toName || teammate.fromName || 'Teammate').split(' ')[0]}
+                  </span>
+                </div>
+              ))
+            ) : (
+              onlineUsers.slice(0, 3).map((user, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                  <span className="text-slate-400">
+                    {user.name.split(' ')[0]}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Messages Stream */}

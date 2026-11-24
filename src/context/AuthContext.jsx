@@ -25,18 +25,39 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [isTeamLead, setIsTeamLead] = useState(() => {
+    return sessionStorage.getItem('hh_is_team_lead') === 'true' || localStorage.getItem('hh_is_team_lead') === 'true';
+  });
 
-  // Sync auth state listener
+  // Sync auth state listener with per-tab session isolation
   useEffect(() => {
-    // Check local fallback first if active
+    // 1. Check tab-specific sessionStorage first (allows Tab 1 = Team Lead, Tab 2 = Member)
+    const sessionUser = sessionStorage.getItem('hh_session_user');
+    const sessionProfile = sessionStorage.getItem('hh_session_profile');
+    if (sessionUser) {
+      try {
+        setCurrentUser(JSON.parse(sessionUser));
+        if (sessionProfile) setUserProfile(JSON.parse(sessionProfile));
+        setLoading(false);
+        return;
+      } catch (e) {
+        console.error("Failed to parse tab session:", e);
+      }
+    }
+
+    // 2. Check local fallback if active
     const savedMockUser = localStorage.getItem('hh_mock_user');
     const savedMockProfile = localStorage.getItem('hh_mock_profile');
 
     if (!isConfigured && savedMockUser) {
       try {
-        setCurrentUser(JSON.parse(savedMockUser));
+        const u = JSON.parse(savedMockUser);
+        setCurrentUser(u);
+        sessionStorage.setItem('hh_session_user', JSON.stringify(u));
         if (savedMockProfile) {
-          setUserProfile(JSON.parse(savedMockProfile));
+          const p = JSON.parse(savedMockProfile);
+          setUserProfile(p);
+          sessionStorage.setItem('hh_session_profile', JSON.stringify(p));
         }
       } catch (e) {
         console.error("Failed to parse mock session:", e);
@@ -53,6 +74,12 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        sessionStorage.setItem('hh_session_user', JSON.stringify({
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL
+        }));
         await loadUserProfile(user.uid);
       } else {
         setUserProfile(null);
@@ -142,16 +169,35 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const demoUser = {
-      uid: 'email-demo-' + Math.random().toString(36).substring(2, 9),
+    const registeredUser = {
+      uid: 'user-' + Math.random().toString(36).substring(2, 9),
       displayName: displayName || email.split('@')[0],
       email: email,
       photoURL: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
       providerId: 'password'
     };
-    setCurrentUser(demoUser);
-    localStorage.setItem('hh_mock_user', JSON.stringify(demoUser));
-    return demoUser;
+    setCurrentUser(registeredUser);
+    sessionStorage.setItem('hh_session_user', JSON.stringify(registeredUser));
+    localStorage.setItem('hh_mock_user', JSON.stringify(registeredUser));
+
+    // Register into shared community users
+    try {
+      const allUsers = JSON.parse(localStorage.getItem('hh_all_community_users') || '[]');
+      const filtered = allUsers.filter(u => u.uid !== registeredUser.uid);
+      filtered.push({
+        uid: registeredUser.uid,
+        displayName: registeredUser.displayName,
+        email: registeredUser.email,
+        preferredRole: 'FullStack',
+        skills: ['React', 'JavaScript', 'Python'],
+        interests: ['Artificial Intelligence', 'Web3 & Crypto'],
+        college: 'Innovation University',
+        photoURL: registeredUser.photoURL
+      });
+      localStorage.setItem('hh_all_community_users', JSON.stringify(filtered));
+    } catch (e) {}
+
+    return registeredUser;
   };
 
   // Email/Password Login
@@ -220,11 +266,70 @@ export function AuthProvider({ children }) {
     }
 
     // Always persist to local cache for instant zero-latency UI updates
+    sessionStorage.setItem('hh_session_profile', JSON.stringify(fullProfile));
     localStorage.setItem(`hh_profile_${currentUser.uid}`, JSON.stringify(fullProfile));
     localStorage.setItem('hh_mock_profile', JSON.stringify(fullProfile));
     setUserProfile(fullProfile);
 
+    // Persist into shared community participants so everyone can see & invite this real person!
+    try {
+      const allCommunity = JSON.parse(localStorage.getItem('hh_all_community_users') || '[]');
+      const filtered = allCommunity.filter(u => u.uid !== fullProfile.uid);
+      filtered.unshift(fullProfile);
+      localStorage.setItem('hh_all_community_users', JSON.stringify(filtered));
+
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('hh_team_sync_channel');
+        bc.postMessage({ type: 'profile_updated', profile: fullProfile });
+        bc.close();
+      }
+    } catch (e) {}
+
     return fullProfile;
+  };
+
+  // Toggle Team Lead status
+  const toggleTeamLead = (status) => {
+    const nextVal = typeof status === 'boolean' ? status : !isTeamLead;
+    setIsTeamLead(nextVal);
+    sessionStorage.setItem('hh_is_team_lead', String(nextVal));
+    localStorage.setItem('hh_is_team_lead', String(nextVal));
+    
+    // Broadcast role change across tabs
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const bc = new BroadcastChannel('hh_team_sync_channel');
+      bc.postMessage({
+        type: 'role_update',
+        data: { uid: currentUser?.uid, isTeamLead: nextVal, displayName: currentUser?.displayName }
+      });
+      bc.close();
+    }
+  };
+
+  // Quick switch active account in current tab (for effortless 2-tab testing)
+  const quickSwitchMember = (member) => {
+    const active = {
+      uid: member.uid,
+      displayName: member.displayName,
+      email: member.email || `${member.uid}@hackathon.edu`,
+      photoURL: member.photoURL,
+      providerId: 'demo'
+    };
+    const prof = {
+      uid: member.uid,
+      displayName: member.displayName,
+      preferredRole: member.preferredRole || 'Developer',
+      skills: member.skills || ['React', 'JavaScript'],
+      interests: member.interests || ['AI', 'Web'],
+      college: member.college || 'Engineering College',
+      bio: member.bio || ''
+    };
+    setCurrentUser(active);
+    setUserProfile(prof);
+    sessionStorage.setItem('hh_session_user', JSON.stringify(active));
+    sessionStorage.setItem('hh_session_profile', JSON.stringify(prof));
+    setIsTeamLead(member.isLead || false);
+    sessionStorage.setItem('hh_is_team_lead', String(member.isLead || false));
   };
 
   // Sign Out
@@ -238,6 +343,9 @@ export function AuthProvider({ children }) {
     }
     setCurrentUser(null);
     setUserProfile(null);
+    sessionStorage.removeItem('hh_session_user');
+    sessionStorage.removeItem('hh_session_profile');
+    sessionStorage.removeItem('hh_is_team_lead');
     localStorage.removeItem('hh_mock_user');
     localStorage.removeItem('hh_mock_profile');
   };
@@ -245,6 +353,9 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     userProfile,
+    isTeamLead,
+    toggleTeamLead,
+    quickSwitchMember,
     loading,
     authError,
     setAuthError,

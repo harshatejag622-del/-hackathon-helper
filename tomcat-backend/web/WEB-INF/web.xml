@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+    <display-name>HackathonHelper - Innovation Marathon Platform</display-name>
+
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+    <!-- 1. Authentication Servlet -->
+    <servlet>
+        <servlet-name>AuthServlet</servlet-name>
+        <servlet-class>com.hackathonhelper.servlet.AuthServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuthServlet</servlet-name>
+        <url-pattern>/auth</url-pattern>
+    </servlet-mapping>
+
+    <!-- 2. Team Lead & Broadcast Servlet -->
+    <servlet>
+        <servlet-name>TeamLeadServlet</servlet-name>
+        <servlet-class>com.hackathonhelper.servlet.TeamLeadServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TeamLeadServlet</servlet-name>
+        <url-pattern>/teamlead</url-pattern>
+    </servlet-mapping>
+
+    <!-- 3. Milestone Alert & Progress Servlet -->
+    <servlet>
+        <servlet-name>MilestoneAlertServlet</servlet-name>
+        <servlet-class>com.hackathonhelper.servlet.MilestoneAlertServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MilestoneAlertServlet</servlet-name>
+        <url-pattern>/milestones</url-pattern>
+    </servlet-mapping>
+
+    <!-- 4. Real-Time Chat Servlet -->
+    <servlet>
+        <servlet-name>ChatServlet</servlet-name>
+        <servlet-class>com.hackathonhelper.servlet.ChatServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ChatServlet</servlet-name>
+        <url-pattern>/chat</url-pattern>
+    </servlet-mapping>
+
+    <!-- Session Timeout (30 minutes) -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+</web-app>

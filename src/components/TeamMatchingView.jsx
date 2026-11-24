@@ -72,7 +72,7 @@ export default function TeamMatchingView({ onNavigate }) {
   };
 
   return (
-    <div className="relative z-10 pt-28 pb-20 px-4 sm:px-8 max-w-7xl mx-auto">
+    <div className="relative z-10 pt-4 sm:pt-6 pb-20 px-4 sm:px-8 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>

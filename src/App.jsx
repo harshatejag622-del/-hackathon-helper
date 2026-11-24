@@ -7,9 +7,10 @@ import Hackathon3DScene from './components/Hackathon3DScene';
 import HeroSection from './components/HeroSection';
 import TeamChatPanel from './components/TeamChatPanel';
 import AuthModal from './components/AuthModal';
+import AlertNotificationModal, { broadcastTeamAlert } from './components/AlertNotificationModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ViewLoadingSkeleton } from './components/SkeletonLoader';
-import { Sparkles, Code2 } from 'lucide-react';
+import { Sparkles, Code2, Crown, BellRing, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 // Lazy load views for optimized bundle splitting & faster first contentful paint
 const ProfilePage = lazy(() => import('./components/ProfilePage'));
@@ -21,7 +22,50 @@ const DashboardView = lazy(() => import('./components/DashboardView'));
 function MainLayout() {
   const [activeTab, setActiveTab] = useState('home');
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, isTeamLead, toggleTeamLead } = useAuth();
+
+  // Team Lead Broadcast action handler
+  const handleLeadAlert = (type) => {
+    const leaderName = userProfile?.displayName || currentUser?.displayName || 'Alex Chen (Team Lead)';
+    if (type === 'incomplete') {
+      broadcastTeamAlert({
+        isPopup: true,
+        type: 'incomplete',
+        senderRole: '👑 Team Lead Urgent Notice',
+        title: '⚠️ Work Not Completed Alert!',
+        message: `${leaderName} noticed Phase 3 (Core MVP Build) is behind schedule! Please push your recent commits, resolve blockers, and report status in War Room Chat.`,
+        milestone: {
+          title: 'Phase 3: Core MVP Build (12-32h)',
+          completed: false,
+          progress: 35
+        }
+      });
+    } else if (type === 'completed') {
+      broadcastTeamAlert({
+        isPopup: true,
+        type: 'completed',
+        senderRole: '👑 Milestone Progress Update',
+        title: '🎉 Milestone Phase 2 Completed!',
+        message: `${leaderName} marked Phase 2 (Architecture & DB) as 100% finished! Great job team, moving to Phase 3 MVP build.`,
+        milestone: {
+          title: 'Phase 2: Architecture & DB',
+          completed: true,
+          progress: 100
+        }
+      });
+    } else {
+      const customMsg = window.prompt("Enter urgent message to alert all team members across all tabs:", "Hurry up! Hackathon midpoint review is in 30 minutes!");
+      if (customMsg && customMsg.trim()) {
+        broadcastTeamAlert({
+          isPopup: true,
+          type: 'urgent',
+          senderRole: '👑 Team Lead Broadcast',
+          title: '📢 Urgent Team Notice',
+          message: `${leaderName}: ${customMsg.trim()}`
+        });
+      }
+    }
+  };
 
   // Keep 3D scene visible behind views with adaptive opacity
   const sceneOpacity = 
@@ -53,6 +97,62 @@ function MainLayout() {
         setActiveTab={setActiveTab} 
         onOpenAuthModal={() => setAuthModalOpen(true)} 
       />
+
+      {/* Interactive Team Lead Control & Alert Broadcast Bar (Padded cleanly below Navbar) */}
+      <div className="relative z-20 pt-28 sm:pt-32 pb-3 px-4 sm:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 backdrop-blur-md shadow-2xl">
+          <div className="flex items-center gap-2.5">
+            <span className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md ${
+              isTeamLead 
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black ring-1 ring-amber-400' 
+                : 'bg-indigo-600/40 text-indigo-300 ring-1 ring-indigo-400/30'
+            }`}>
+              <Crown className="w-3.5 h-3.5" />
+              {isTeamLead ? 'You are Team Lead 👑' : 'Team Member View 💻'}
+            </span>
+            <button
+              onClick={() => toggleTeamLead()}
+              className="text-xs font-medium underline text-indigo-300 hover:text-white transition-colors"
+            >
+              (Switch to {isTeamLead ? 'Member' : 'Lead'})
+            </button>
+          </div>
+
+          {/* Interactive Alert Triggers (Works across all open tabs!) */}
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-[11px] text-slate-400 font-semibold hidden sm:inline">Squad Command:</span>
+            <button
+              onClick={() => handleLeadAlert('incomplete')}
+              className="btn btn-error btn-xs gap-1 text-white shadow-md active:scale-95 font-bold"
+              title="Pop up warning on all teammate tabs about delayed work"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              ⚠️ Alert Work Incomplete
+            </button>
+
+            <button
+              onClick={() => handleLeadAlert('completed')}
+              className="btn btn-success btn-xs gap-1 text-slate-950 font-bold shadow-md active:scale-95"
+              title="Broadcast milestone progress celebration"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              🎉 Milestone Done
+            </button>
+
+            <button
+              onClick={() => handleLeadAlert('custom')}
+              className="btn btn-primary btn-xs gap-1 shadow-md active:scale-95 font-bold"
+              title="Send custom broadcast message to all open tabs"
+            >
+              <BellRing className="w-3.5 h-3.5" />
+              📢 Broadcast Alert
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Global Interactive Alert Popup Box & Toasts (cross-tab real-time sync) */}
+      <AlertNotificationModal onNavigate={setActiveTab} />
 
       {/* Main Content Views wrapped in Suspense and ErrorBoundary */}
       <main className="relative z-10 min-h-screen">

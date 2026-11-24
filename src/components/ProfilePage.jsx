@@ -152,7 +152,7 @@ export default function ProfilePage({ onNavigate }) {
   };
 
   return (
-    <div className="relative z-10 pt-28 pb-20 px-4 sm:px-8 max-w-4xl mx-auto">
+    <div className="relative z-10 pt-4 sm:pt-6 pb-20 px-4 sm:px-8 max-w-4xl mx-auto">
       {/* Page Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/30 mb-3 backdrop-blur-md">

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenAuthModal }) {
-  const { currentUser, userProfile, logout } = useAuth();
+  const { currentUser, userProfile, isTeamLead, logout } = useAuth();
   const { receivedInvites, pendingCount, acceptInvite, declineInvite } = useInvites();
   const { toggleChat, unreadCount } = useChat() || {};
 
@@ -230,8 +230,8 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAuthModal }) {
                   <span className="text-xs font-bold text-white block leading-tight max-w-[100px] truncate">
                     {displayName}
                   </span>
-                  <span className="text-[10px] text-indigo-300 block leading-tight">
-                    {userProfile?.preferredRole || 'Profile'}
+                  <span className={`text-[10px] block leading-tight font-bold ${isTeamLead ? 'text-amber-400' : 'text-indigo-300'}`}>
+                    {isTeamLead ? '👑 Lead' : (userProfile?.preferredRole || 'Member')}
                   </span>
                 </div>
               </div>

@@ -32,7 +32,7 @@ export default function HeroSection({ setActiveTab }) {
   ];
 
   return (
-    <div className="relative z-10 pt-28 sm:pt-32 pb-16 px-4 sm:px-8 max-w-7xl mx-auto">
+    <div className="relative z-10 pt-4 sm:pt-6 pb-16 px-4 sm:px-8 max-w-7xl mx-auto">
       {/* Top Banner Tag */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}

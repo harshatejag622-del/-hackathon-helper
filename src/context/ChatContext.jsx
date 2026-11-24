@@ -6,32 +6,8 @@ const ChatContext = createContext({});
 
 export const useChat = () => useContext(ChatContext);
 
-// Teammate simulated response presets
-const AUTO_REPLIES = [
-  {
-    senderName: 'Priya Sharma',
-    senderRole: 'ML Engineer',
-    senderPhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-    replies: [
-      'Awesome progress! The Gemini inference response latency is down to 240ms.',
-      'Checking this right now. Integrating our vector embeddings to match the Firestore schema.',
-      'Looks great! Let us review the test set accuracy at Milestone 2.'
-    ]
-  },
-  {
-    senderName: 'Marcus Vance',
-    senderRole: 'Backend Architect',
-    senderPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-    replies: [
-      'Got it! API route is tested and deployed on our staging container.',
-      'Merging this pull request into main now. CI/CD checks passed!',
-      'Database indexes are built. Queries are executing in sub-10ms.'
-    ]
-  }
-];
-
 export function ChatProvider({ children }) {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, isTeamLead } = useAuth();
 
   const [messages, setMessages] = useState(INITIAL_CHAT_MESSAGES);
   const [unreadCount, setUnreadCount] = useState(1);
@@ -101,16 +77,18 @@ export function ChatProvider({ children }) {
   const sendMessage = async (text, attachment = null) => {
     if (!text.trim() && !attachment) return;
 
-    const senderName = userProfile?.displayName || currentUser?.displayName || 'You (Leader)';
-    const senderRole = userProfile?.preferredRole || 'FullStack';
+    const baseName = userProfile?.displayName || currentUser?.displayName || 'Teammate';
+    const senderName = isTeamLead ? `${baseName} (Lead)` : baseName;
+    const senderRole = isTeamLead ? '👑 Team Lead' : (userProfile?.preferredRole || 'Developer');
     const senderPhoto = currentUser?.photoURL || null;
 
     const newMsg = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      senderId: currentUser?.uid || 'current-user',
+      senderId: currentUser?.uid || `user-${Math.random().toString(36).substring(2, 6)}`,
       senderName,
       senderRole,
       senderPhoto,
+      isLead: !!isTeamLead,
       text: text.trim(),
       attachment,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -120,36 +98,8 @@ export function ChatProvider({ children }) {
     setMessages(prev => [...prev, newMsg]);
     setPulseTick(p => p + 1); // Trigger 3D shockwave pulse immediately
 
-    // Broadcast across socket & Firestore
+    // Broadcast across socket & Firestore & BroadcastChannel
     await chatManager.sendMessage(newMsg);
-
-    // Simulate intelligent teammate response after 2.5 seconds
-    setTimeout(() => {
-      const responder = AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)];
-      const replyText = responder.replies[Math.floor(Math.random() * responder.replies.length)];
-
-      // Trigger typing indicator first
-      setTypingUsers([responder.senderName]);
-
-      setTimeout(() => {
-        setTypingUsers([]);
-        const replyMsg = {
-          id: `msg-${Date.now()}-reply`,
-          senderId: `sim-${responder.senderName}`,
-          senderName: responder.senderName,
-          senderRole: responder.senderRole,
-          senderPhoto: responder.senderPhoto,
-          text: replyText,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setMessages(prev => [...prev, replyMsg]);
-        setPulseTick(p => p + 1); // 3D pulse on incoming message
-        if (!isChatOpen) {
-          setUnreadCount(c => c + 1);
-        }
-      }, 1800);
-    }, 1200);
 
     return newMsg;
   };
