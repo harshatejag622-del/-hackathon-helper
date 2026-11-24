@@ -26,7 +26,7 @@ function MainLayout() {
 
   // Team Lead Broadcast action handler
   const handleLeadAlert = (type) => {
-    const leaderName = userProfile?.displayName || currentUser?.displayName || 'Alex Chen (Team Lead)';
+    const leaderName = userProfile?.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Team Lead';
     if (type === 'incomplete') {
       broadcastTeamAlert({
         isPopup: true,

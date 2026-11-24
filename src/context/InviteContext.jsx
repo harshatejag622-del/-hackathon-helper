@@ -5,6 +5,7 @@ import {
   fetchInvites, 
   updateInviteStatus 
 } from '../services/matchingService';
+import { cloudSync } from '../services/cloudSyncService';
 import confetti from 'canvas-confetti';
 
 const InviteContext = createContext({});
@@ -36,8 +37,56 @@ export function InviteProvider({ children }) {
     refreshInvites();
   }, [currentUser]);
 
-  // Real-time cross-tab invite synchronization via BroadcastChannel
+  // Real-time cross-laptop and cross-tab invite synchronization
   useEffect(() => {
+    // 1. Cross-laptop CloudSync listener
+    const playChime = () => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } catch(e) {}
+    };
+
+    const unsubCloudSent = cloudSync.on('INVITE_SENT', (invite) => {
+      if (!invite) return;
+      setInvites(prev => {
+        if (prev.some(i => i.id === invite.id)) return prev;
+        return [...prev, invite];
+      });
+
+      // If current user is the recipient on this laptop, alert!
+      if (currentUser && (invite.toUid === currentUser.uid || invite.toName === currentUser.displayName)) {
+        playChime();
+      }
+    });
+
+    const unsubCloudAccepted = cloudSync.on('INVITE_ACCEPTED', ({ inviteId }) => {
+      setInvites(prev => prev.map(inv => 
+        inv.id === inviteId ? { ...inv, status: 'accepted' } : inv
+      ));
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    });
+
+    const unsubCloudDeclined = cloudSync.on('INVITE_DECLINED', ({ inviteId }) => {
+      setInvites(prev => prev.map(inv => 
+        inv.id === inviteId ? { ...inv, status: 'declined' } : inv
+      ));
+    });
+
+    // 2. Same-machine BroadcastChannel
     let bc;
     try {
       bc = new BroadcastChannel('hh_team_invites_channel');
@@ -49,42 +98,25 @@ export function InviteProvider({ children }) {
             if (!exists) return [...prev, invite];
             return prev;
           });
-          // If this tab is the recipient, play subtle alert
           if (currentUser && invite.toUid === currentUser.uid) {
-            try {
-              const ctx = new (window.AudioContext || window.webkitAudioContext)();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-              osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15);
-              gain.gain.setValueAtTime(0.15, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start();
-              osc.stop(ctx.currentTime + 0.4);
-            } catch(e) {}
+            playChime();
           }
         } else if (type === 'invite_accepted' && inviteId) {
           setInvites(prev => prev.map(inv => 
             inv.id === inviteId ? { ...inv, status: 'accepted' } : inv
           ));
-          confetti({
-            particleCount: 60,
-            spread: 70,
-            origin: { y: 0.6 }
-          });
         } else if (type === 'invite_declined' && inviteId) {
           setInvites(prev => prev.map(inv => 
             inv.id === inviteId ? { ...inv, status: 'declined' } : inv
           ));
         }
       };
-    } catch (e) {
-      console.warn("Invite BroadcastChannel init notice:", e);
-    }
+    } catch (e) {}
 
     return () => {
+      unsubCloudSent();
+      unsubCloudAccepted();
+      unsubCloudDeclined();
       if (bc) bc.close();
     };
   }, [currentUser]);

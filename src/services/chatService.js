@@ -8,6 +8,7 @@ import {
   isConfigured 
 } from '../firebase/config';
 import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { cloudSync } from './cloudSyncService';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_SERVER_URL || 'http://localhost:3001';
 
@@ -73,6 +74,14 @@ class ChatSocketManager {
     } catch (err) {
       console.warn("Socket.io init note:", err.message);
     }
+
+    // 3. Cross-Laptop CloudSync for multi-device chatting
+    try {
+      cloudSync.on('CHAT_MESSAGE', (incoming) => {
+        if (!incoming || !incoming.id) return;
+        this.messageListeners.forEach(cb => cb(incoming));
+      });
+    } catch (e) {}
   }
 
   // Subscribe to new messages
@@ -118,6 +127,9 @@ class ChatSocketManager {
     const stored = JSON.parse(localStorage.getItem('hh_team_chat_history') || '[]');
     stored.push(messageData);
     localStorage.setItem('hh_team_chat_history', JSON.stringify(stored));
+
+    // 5. Broadcast across all laptops & devices via CloudSync
+    cloudSync.publish('CHAT_MESSAGE', messageData);
 
     return messageData;
   }

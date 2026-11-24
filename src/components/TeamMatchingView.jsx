@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useInvites } from '../context/InviteContext';
 import { fetchAllParticipants, getTopMatches } from '../services/matchingService';
+import { cloudSync } from '../services/cloudSyncService';
 import TeamMatch3DGraph from './TeamMatch3DGraph';
 import { 
   Users, 
@@ -57,7 +58,11 @@ export default function TeamMatchingView({ onNavigate }) {
   useEffect(() => {
     loadData();
 
-    // Listen to real-time cross-tab community updates (when a friend registers or updates profile in another tab)
+    // 1. Cross-laptop real-time listener (when a friend on another laptop registers or saves profile)
+    const unsubRegister = cloudSync.on('USER_REGISTERED', () => loadData());
+    const unsubUpdate = cloudSync.on('USER_UPDATED', () => loadData());
+
+    // 2. Listen to real-time cross-tab community updates on same machine
     let bc;
     try {
       bc = new BroadcastChannel('hh_team_sync_channel');
@@ -69,6 +74,8 @@ export default function TeamMatchingView({ onNavigate }) {
     } catch (e) {}
 
     return () => {
+      unsubRegister();
+      unsubUpdate();
       if (bc) bc.close();
     };
   }, [currentUser]);

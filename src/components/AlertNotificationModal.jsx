@@ -13,6 +13,7 @@ import {
   Volume2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { cloudSync } from '../services/cloudSyncService';
 
 // Play pleasant web-audio chime for cross-tab alerts
 function playAlertChime() {
@@ -38,32 +39,37 @@ export default function AlertNotificationModal({ onNavigate }) {
   const [activeAlert, setActiveAlert] = useState(null);
   const [toastQueue, setToastQueue] = useState([]);
 
-  // Listen across all tabs via BroadcastChannel
+  // Listen across all laptops & tabs
   useEffect(() => {
+    const handleIncomingAlert = (alertData) => {
+      if (!alertData) return;
+      playAlertChime();
+      if (alertData.isPopup) {
+        setActiveAlert(alertData);
+      } else {
+        setToastQueue(prev => [...prev, { ...alertData, id: Date.now() }]);
+      }
+      if (alertData.type === 'completed') {
+        confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
+      }
+    };
+
+    // 1. Cross-laptop CloudSync listener
+    const unsubCloud = cloudSync.on('LEAD_ALERT', handleIncomingAlert);
+
+    // 2. Same-machine BroadcastChannel
     let bc;
     try {
       bc = new BroadcastChannel('hh_team_alerts_channel');
       bc.onmessage = (event) => {
-        const alertData = event.data;
-        if (alertData) {
-          playAlertChime();
-          if (alertData.isPopup) {
-            setActiveAlert(alertData);
-          } else {
-            // Push to small corner toast
-            setToastQueue(prev => [...prev, { ...alertData, id: Date.now() }]);
-          }
-
-          if (alertData.type === 'completed') {
-            confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
-          }
-        }
+        handleIncomingAlert(event.data);
       };
     } catch (e) {
       console.warn("Alert BroadcastChannel notice:", e);
     }
 
     return () => {
+      unsubCloud();
       if (bc) bc.close();
     };
   }, []);
@@ -199,8 +205,14 @@ export default function AlertNotificationModal({ onNavigate }) {
   );
 }
 
-// Helper to broadcast alert to all open tabs and Firestore
+// Helper to broadcast alert to all open tabs and laptops
 export function broadcastTeamAlert(alertData) {
+  // 1. Cross-laptop CloudSync
+  try {
+    cloudSync.publish('LEAD_ALERT', alertData);
+  } catch (e) {}
+
+  // 2. Same-machine BroadcastChannel
   try {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       const bc = new BroadcastChannel('hh_team_alerts_channel');

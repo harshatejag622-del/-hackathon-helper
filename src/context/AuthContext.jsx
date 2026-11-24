@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   isConfigured
 } from '../firebase/config';
+import { cloudSync } from '../services/cloudSyncService';
 
 const AuthContext = createContext({});
 
@@ -155,6 +156,9 @@ export function AuthProvider({ children }) {
       filtered.push(newUserProfile);
       localStorage.setItem('hh_all_community_users', JSON.stringify(filtered));
 
+      // Broadcast across all laptops, phones, and tabs
+      cloudSync.publish('USER_REGISTERED', newUserProfile);
+
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const bc = new BroadcastChannel('hh_team_sync_channel');
         bc.postMessage({ type: 'new_registered_user', user: newUserProfile });
@@ -260,6 +264,9 @@ export function AuthProvider({ children }) {
       const filtered = allCommunity.filter(u => u.uid !== fullProfile.uid);
       filtered.unshift(fullProfile);
       localStorage.setItem('hh_all_community_users', JSON.stringify(filtered));
+
+      // Broadcast profile updates across all laptops and tabs
+      cloudSync.publish('USER_UPDATED', fullProfile);
 
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const bc = new BroadcastChannel('hh_team_sync_channel');

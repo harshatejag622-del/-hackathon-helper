@@ -8,6 +8,7 @@ import {
 } from '../firebase/config';
 import { collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { calculateCandidateMatch } from '../utils/cosineMatching';
+import { cloudSync } from './cloudSyncService';
 
 // Community participants list (empty by default - populated by real registered users!)
 export const DEFAULT_PARTICIPANTS = [];
@@ -99,6 +100,9 @@ export async function createTeamInvite({ fromUser, toUser, matchScore }) {
   existing.push(invite);
   localStorage.setItem('hh_invites', JSON.stringify(existing));
 
+  // Broadcast invite across all laptops and tabs via CloudSync
+  cloudSync.publish('INVITE_SENT', invite);
+
   return invite;
 }
 
@@ -149,6 +153,13 @@ export async function updateInviteStatus(inviteId, status) {
   const localInvites = JSON.parse(localStorage.getItem('hh_invites') || '[]');
   const updated = localInvites.map(inv => inv.id === inviteId ? { ...inv, status } : inv);
   localStorage.setItem('hh_invites', JSON.stringify(updated));
+
+  // Broadcast invite status across all laptops
+  if (status === 'accepted') {
+    cloudSync.publish('INVITE_ACCEPTED', { inviteId, status });
+  } else if (status === 'declined') {
+    cloudSync.publish('INVITE_DECLINED', { inviteId, status });
+  }
 
   return true;
 }
