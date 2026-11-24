@@ -98,21 +98,24 @@ function MainLayout() {
         onOpenAuthModal={() => setAuthModalOpen(true)} 
       />
 
-      {/* Interactive Team Lead Control & Alert Broadcast Bar (Padded cleanly below Navbar) */}
-      <div className="relative z-20 pt-28 sm:pt-32 pb-3 px-4 sm:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 backdrop-blur-md shadow-2xl">
-          <div className="flex items-center gap-2.5">
-            <span className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md ${
+      {/* Interactive Team Lead Control & Alert Broadcast Bar (Explicit 110px top clearance) */}
+      <div 
+        className="relative z-20 px-4 sm:px-8 max-w-7xl mx-auto pb-4"
+        style={{ paddingTop: '115px' }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-indigo-950/90 border border-indigo-500/50 backdrop-blur-xl shadow-2xl">
+          <div className="flex items-center gap-3">
+            <span className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md ${
               isTeamLead 
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black ring-1 ring-amber-400' 
-                : 'bg-indigo-600/40 text-indigo-300 ring-1 ring-indigo-400/30'
+                : 'bg-indigo-600/50 text-indigo-200 ring-1 ring-indigo-400/40'
             }`}>
-              <Crown className="w-3.5 h-3.5" />
+              <Crown className="w-4 h-4 text-amber-300" />
               {isTeamLead ? 'You are Team Lead 👑' : 'Team Member View 💻'}
             </span>
             <button
               onClick={() => toggleTeamLead()}
-              className="text-xs font-medium underline text-indigo-300 hover:text-white transition-colors"
+              className="text-xs font-medium underline text-indigo-300 hover:text-white transition-colors cursor-pointer"
             >
               (Switch to {isTeamLead ? 'Member' : 'Lead'})
             </button>
